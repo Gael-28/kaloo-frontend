@@ -1,32 +1,244 @@
 package com.kaloo.frontend
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @Composable
 fun ClientScreen(username: String, onLogout: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Panel de Cliente", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("¡Bienvenido, $username!", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.height(16.dp))
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Nutrición IA", "Ejercicios IA", "Entrenadores")
+    val api = remember { ClientApi() }
 
-        Text(
-            "Módulo de consulta de rutinas diarias y avance personal.",
-            style = MaterialTheme.typography.bodyMedium
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Hola, $username", style = MaterialTheme.typography.titleLarge)
+                Text("Panel del Cliente", style = MaterialTheme.typography.bodyMedium)
+            }
+            OutlinedButton(onClick = onLogout) {
+                Text("Salir")
+            }
+        }
+
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            when (selectedTab) {
+                0 -> NutritionTab(api)
+                1 -> ExercisesTab(api)
+                2 -> CoachesTab(api, username)
+            }
+        }
+    }
+}
+
+@Composable
+fun NutritionTab(api: ClientApi) {
+    val scope = rememberCoroutineScope()
+    var weight by remember { mutableStateOf("") }
+    var height by remember { mutableStateOf("") }
+    var bmiResult by remember { mutableStateOf("") }
+    var recommendation by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Plan Nutricional con IA", style = MaterialTheme.typography.titleMedium)
+        Text("Ingresa tus datos para calcular tu IMC y recibir tu plan del servidor.")
+
+        OutlinedTextField(
+            value = weight,
+            onValueChange = { weight = it },
+            label = { Text("Peso (kg)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = height,
+            onValueChange = { height = it },
+            label = { Text("Estatura (cm)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onLogout) {
-            Text("Cerrar Sesión")
+        Button(
+            onClick = {
+                val w = weight.toFloatOrNull()
+                val h = height.toFloatOrNull()
+                if (w != null && h != null && h > 0) {
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.getNutritionPlan(w, h)
+                            val roundedBmi = (res.bmi * 100).toInt() / 100.0
+                            bmiResult = "Tu IMC: $roundedBmi"
+                            recommendation = res.recommendation
+                        } catch (e: Exception) {
+                            recommendation = "Error de conexión: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                } else {
+                    bmiResult = "Ingresa peso y estatura válidos."
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isLoading) "Consultando Backend..." else "Calcular IMC y Recomendar Dieta")
+        }
+
+        if (bmiResult.isNotEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(bmiResult, style = MaterialTheme.typography.titleSmall)
+                    if (recommendation.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(recommendation, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExercisesTab(api: ClientApi) {
+    val scope = rememberCoroutineScope()
+    var goal by remember { mutableStateOf("") }
+    var routineList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Recomendación de Ejercicios IA", style = MaterialTheme.typography.titleMedium)
+        Text("Escribe tu objetivo (ej. Fuerza, Masa muscular, Perder grasa).")
+
+        OutlinedTextField(
+            value = goal,
+            onValueChange = { goal = it },
+            label = { Text("Objetivo personal") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Button(
+            onClick = {
+                if (goal.isNotBlank()) {
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.getExerciseRecommendation(goal)
+                            routineList = res.routine
+                        } catch (e: Exception) {
+                            routineList = listOf("Error al consultar la rutina: ${e.message}")
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isLoading) "Generando..." else "Generar Rutina con IA")
+        }
+
+        if (routineList.isNotEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Rutina recomendada del servidor:", style = MaterialTheme.typography.titleSmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    routineList.forEach { exercise ->
+                        Text("• $exercise", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CoachesTab(api: ClientApi, username: String) {
+    val scope = rememberCoroutineScope()
+    var question by remember { mutableStateOf("") }
+    var statusMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Entrenadores Disponibles", style = MaterialTheme.typography.titleMedium)
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Entrenador en turno: Entrenador Kaloo", style = MaterialTheme.typography.titleSmall)
+                Text("Estado: En línea", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
+        OutlinedTextField(
+            value = question,
+            onValueChange = { question = it },
+            label = { Text("Escribe tu duda para el entrenador...") },
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 4
+        )
+
+        Button(
+            onClick = {
+                if (question.isNotBlank()) {
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.sendCoachMessage(username, "Entrenador Kaloo", question)
+                            statusMessage = res.message
+                            question = ""
+                        } catch (e: Exception) {
+                            statusMessage = "Error al enviar mensaje: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                }
+            },
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isLoading) "Enviando..." else "Enviar Mensaje")
+        }
+
+        if (statusMessage.isNotEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(statusMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                }
+            }
         }
     }
 }
