@@ -8,14 +8,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 @Composable
 fun ClientScreen(username: String, onLogout: () -> Unit) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Nutrición IA", "Ejercicios IA", "Entrenadores")
+    val api = remember { ClientApi() }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Cabecera superior
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -30,7 +31,6 @@ fun ClientScreen(username: String, onLogout: () -> Unit) {
             }
         }
 
-        // Pestañas para tus 3 módulos asignados
         TabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -41,29 +41,31 @@ fun ClientScreen(username: String, onLogout: () -> Unit) {
             }
         }
 
-        // Contenido según la pestaña activa
         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             when (selectedTab) {
-                0 -> NutritionTab()
-                1 -> ExercisesTab()
-                2 -> CoachesTab()
+                0 -> NutritionTab(api)
+                1 -> ExercisesTab(api)
+                2 -> CoachesTab(api, username)
             }
         }
     }
 }
 
 @Composable
-fun NutritionTab() {
+fun NutritionTab(api: ClientApi) {
+    val scope = rememberCoroutineScope()
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
     var bmiResult by remember { mutableStateOf("") }
+    var recommendation by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Plan Nutricional con IA", style = MaterialTheme.typography.titleMedium)
-        Text("Ingresa tus datos para calcular tu IMC y recibir una sugerencia nutricional.")
+        Text("Ingresa tus datos para calcular tu IMC y recibir tu plan del servidor.")
 
         OutlinedTextField(
             value = weight,
@@ -83,30 +85,39 @@ fun NutritionTab() {
         Button(
             onClick = {
                 val w = weight.toFloatOrNull()
-                val h = height.toFloatOrNull()?.div(100)
+                val h = height.toFloatOrNull()
                 if (w != null && h != null && h > 0) {
-                    val bmi = w / (h * h)
-                    val bmiRounded = (bmi * 100).toInt() / 100.0
-                    bmiResult = "Tu IMC calculado es: $bmiRounded"
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.getNutritionPlan(w, h)
+                            val roundedBmi = (res.bmi * 100).toInt() / 100.0
+                            bmiResult = "Tu IMC: $roundedBmi"
+                            recommendation = res.recommendation
+                        } catch (e: Exception) {
+                            recommendation = "Error de conexión: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
                 } else {
                     bmiResult = "Ingresa peso y estatura válidos."
                 }
             },
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Calcular IMC y Recomendar Dieta")
+            Text(if (isLoading) "Consultando Backend..." else "Calcular IMC y Recomendar Dieta")
         }
 
         if (bmiResult.isNotEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(bmiResult, style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Sugerencia de IA: Mantén una ingesta de 2g de proteína por kg " +
-                                "y prioriza carbohidratos complejos en días de entrenamiento pesado.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    if (recommendation.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(recommendation, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
@@ -114,16 +125,18 @@ fun NutritionTab() {
 }
 
 @Composable
-fun ExercisesTab() {
+fun ExercisesTab(api: ClientApi) {
+    val scope = rememberCoroutineScope()
     var goal by remember { mutableStateOf("") }
-    var recommendation by remember { mutableStateOf("") }
+    var routineList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Recomendación de Ejercicios IA", style = MaterialTheme.typography.titleMedium)
-        Text("Describe tu objetivo principal (ej. Ganar masa muscular, Perder grasa, Fuerza).")
+        Text("Escribe tu objetivo (ej. Fuerza, Masa muscular, Perder grasa).")
 
         OutlinedTextField(
             value = goal,
@@ -136,24 +149,33 @@ fun ExercisesTab() {
         Button(
             onClick = {
                 if (goal.isNotBlank()) {
-                    recommendation = "Rutina sugerida por IA para '$goal':\n" +
-                            "• Sentadilla libre: 4 series x 8-10 reps\n" +
-                            "• Press de banca plano: 4 series x 8 reps\n" +
-                            "• Remo inclinado con barra: 4 series x 10 reps\n" +
-                            "• Press militar con mancuernas: 3 series x 12 reps"
-                } else {
-                    recommendation = "Por favor ingresa un objetivo."
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.getExerciseRecommendation(goal)
+                            routineList = res.routine
+                        } catch (e: Exception) {
+                            routineList = listOf("Error al consultar la rutina: ${e.message}")
+                        } finally {
+                            isLoading = false
+                        }
+                    }
                 }
             },
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Generar Rutina con IA")
+            Text(if (isLoading) "Generando..." else "Generar Rutina con IA")
         }
 
-        if (recommendation.isNotEmpty()) {
+        if (routineList.isNotEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(recommendation, style = MaterialTheme.typography.bodyMedium)
+                    Text("Rutina recomendada del servidor:", style = MaterialTheme.typography.titleSmall)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    routineList.forEach { exercise ->
+                        Text("• $exercise", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
@@ -161,28 +183,29 @@ fun ExercisesTab() {
 }
 
 @Composable
-fun CoachesTab() {
+fun CoachesTab(api: ClientApi, username: String) {
+    val scope = rememberCoroutineScope()
     var question by remember { mutableStateOf("") }
     var statusMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Entrenadores Disponibles", style = MaterialTheme.typography.titleMedium)
-        Text("Consulta dudas o solicita consejos a los entrenadores en turno.")
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Entrenador en turno: Entrenador Kaloo", style = MaterialTheme.typography.titleSmall)
-                Text("Estado: Disponible para consultas", style = MaterialTheme.typography.bodySmall)
+                Text("Estado: En línea", style = MaterialTheme.typography.bodySmall)
             }
         }
 
         OutlinedTextField(
             value = question,
             onValueChange = { question = it },
-            label = { Text("Escribe tu pregunta o duda...") },
+            label = { Text("Escribe tu duda para el entrenador...") },
             modifier = Modifier.fillMaxWidth(),
             maxLines = 4
         )
@@ -190,15 +213,24 @@ fun CoachesTab() {
         Button(
             onClick = {
                 if (question.isNotBlank()) {
-                    statusMessage = "Consulta enviada exitosamente al entrenador."
-                    question = ""
-                } else {
-                    statusMessage = "Escribe un mensaje antes de enviar."
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            val res = api.sendCoachMessage(username, "Entrenador Kaloo", question)
+                            statusMessage = res.message
+                            question = ""
+                        } catch (e: Exception) {
+                            statusMessage = "Error al enviar mensaje: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
                 }
             },
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Enviar Mensaje al Entrenador")
+            Text(if (isLoading) "Enviando..." else "Enviar Mensaje")
         }
 
         if (statusMessage.isNotEmpty()) {
