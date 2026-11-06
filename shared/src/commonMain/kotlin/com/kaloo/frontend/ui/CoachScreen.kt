@@ -1,4 +1,4 @@
-package com.kaloo.frontend
+package com.kaloo.frontend.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kaloo.frontend.utils.PixelatedPlaceholder
 
 @Composable
 fun CoachScreen(username: String, onLogout: () -> Unit) {
@@ -14,13 +15,15 @@ fun CoachScreen(username: String, onLogout: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        PixelatedPlaceholder()
+        Spacer(modifier = Modifier.height(16.dp))
         Text("Panel de Entrenador", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
         Text("¡Bienvenido, $username!", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            "Módulo de asignación de rutinas y seguimiento de atletas.",
+            "Módulo de asignación de rutinas y seguimiento de atletas. (Pendiente: conectar al backend)",
             style = MaterialTheme.typography.bodyMedium
         )
 

@@ -1,4 +1,4 @@
-package com.kaloo.frontend
+package com.kaloo.frontend.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,38 +7,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kaloo.frontend.data.AuthApi
+import com.kaloo.frontend.model.LoginRequest
+import com.kaloo.frontend.utils.PixelatedPlaceholder
 import kotlinx.coroutines.launch
 
-sealed class Screen {
-    object Login : Screen()
-    data class Admin(val username: String) : Screen()
-    data class Coach(val username: String) : Screen()
-    data class Client(val username: String) : Screen()
-}
-
 @Composable
-fun App() {
-    MaterialTheme {
-        var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
-
-        when (val screen = currentScreen) {
-            is Screen.Login -> LoginView(onLoginSuccess = { username, role ->
-                currentScreen = when (role?.uppercase()) {
-                    "ADMINISTRADOR", "ADMIN" -> Screen.Admin(username)
-                    "ENTRENADOR", "COACH" -> Screen.Coach(username)
-                    "CLIENTE" -> Screen.Client(username)
-                    else -> Screen.Client(username)
-                }
-            })
-            is Screen.Admin -> AdminScreen(screen.username) { currentScreen = Screen.Login }
-            is Screen.Coach -> CoachScreen(screen.username) { currentScreen = Screen.Login }
-            is Screen.Client -> ClientScreen(screen.username) { currentScreen = Screen.Login }
-        }
-    }
-}
-
-@Composable
-fun LoginView(onLoginSuccess: (String, String?) -> Unit) {
+fun LoginScreen(onLoginSuccess: (String, String?) -> Unit) {
     val api = remember { AuthApi() }
     val scope = rememberCoroutineScope()
 
@@ -52,6 +27,8 @@ fun LoginView(onLoginSuccess: (String, String?) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        PixelatedPlaceholder()
+        Spacer(modifier = Modifier.height(16.dp))
         Text("ProyectoGym - Kaloo", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
 

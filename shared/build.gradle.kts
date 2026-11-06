@@ -46,6 +46,12 @@ kotlin {
 
             implementation("io.ktor:ktor-client-okhttp:2.3.12")
         }
+        iosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:2.3.12")
+        }
+        jvmMain.dependencies {
+            implementation("io.ktor:ktor-client-okhttp:2.3.12")
+        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
