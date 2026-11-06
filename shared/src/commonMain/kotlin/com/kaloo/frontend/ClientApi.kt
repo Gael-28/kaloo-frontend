@@ -8,6 +8,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import io.ktor.client.plugins.HttpTimeout
 
 // --- Modelos de datos compartidos ---
 
@@ -63,5 +64,16 @@ class ClientApi {
             contentType(ContentType.Application.Json)
             setBody(CoachMessageRequest(username, coachName, message))
         }.body()
+    }
+}
+val client = HttpClient {
+    install(ContentNegotiation) {
+        json()
+    }
+
+    install(HttpTimeout) {
+        requestTimeoutMillis = 60_000
+        connectTimeoutMillis = 60_000
+        socketTimeoutMillis = 60_000
     }
 }
