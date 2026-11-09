@@ -30,8 +30,8 @@ class AuthApi {
         }
     }
 
-    // 10.0.2.2 es la IP para acceder al localhost de tu PC desde el emulador de Android
-    private val baseUrl = "http://10.0.2.2:8080"
+    // Cambiar la IP local por tu URL en Railway
+    private val baseUrl = "https://kaloo-backend-production.up.railway.app"
 
     suspend fun login(request: LoginRequest): AuthResponse {
         return try {

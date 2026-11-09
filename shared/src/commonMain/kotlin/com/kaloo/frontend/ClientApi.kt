@@ -2,13 +2,13 @@ package com.kaloo.frontend
 
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import io.ktor.client.plugins.HttpTimeout
 
 // --- Modelos de datos compartidos ---
 
@@ -40,10 +40,16 @@ class ClientApi {
                 prettyPrint = true
             })
         }
+        // Configuración de timeouts integrada directamente en el cliente principal
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60_000
+            connectTimeoutMillis = 60_000
+            socketTimeoutMillis = 60_000
+        }
     }
 
-    // IP para emulador Android (cambiar a localhost o tu IP local en Desktop/iOS)
-    private val baseUrl = "http://10.0.2.2:8080"
+    // Reemplaza esta URL con el dominio exacto generado por Railway (sin '/' al final)
+    private val baseUrl = "https://kaloo-backend-production.up.railway.app"
 
     suspend fun getNutritionPlan(weight: Float, height: Float): NutritionResponse {
         return client.post("$baseUrl/api/nutrition") {
@@ -64,16 +70,5 @@ class ClientApi {
             contentType(ContentType.Application.Json)
             setBody(CoachMessageRequest(username, coachName, message))
         }.body()
-    }
-}
-val client = HttpClient {
-    install(ContentNegotiation) {
-        json()
-    }
-
-    install(HttpTimeout) {
-        requestTimeoutMillis = 60_000
-        connectTimeoutMillis = 60_000
-        socketTimeoutMillis = 60_000
     }
 }
