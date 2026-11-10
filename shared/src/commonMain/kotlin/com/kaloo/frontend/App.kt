@@ -17,19 +17,29 @@ sealed class Screen {
 }
 
 @Composable
-fun App() {
+// Cambiamos la firma para que pueda enviar la función de éxito
+fun App(onBiometricRequest: (onSuccess: () -> Unit) -> Unit = {}) {
     MaterialTheme {
         var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
 
         when (val screen = currentScreen) {
-            is Screen.Login -> LoginView(onLoginSuccess = { username, role ->
-                currentScreen = when (role?.uppercase()) {
-                    "ADMINISTRADOR", "ADMIN" -> Screen.Admin(username)
-                    "ENTRENADOR", "COACH" -> Screen.Coach(username)
-                    "CLIENTE" -> Screen.Client(username)
-                    else -> Screen.Client(username)
+            is Screen.Login -> LoginView(
+                onBiometricClick = {
+                    // Llamamos a la huella y le decimos qué hacer si tiene éxito
+                    onBiometricRequest {
+
+                        currentScreen = Screen.Client("Usuario")
+                    }
+                },
+                onLoginSuccess = { username, role ->
+                    currentScreen = when (role?.uppercase()) {
+                        "ADMINISTRADOR", "ADMIN" -> Screen.Admin(username)
+                        "ENTRENADOR", "COACH" -> Screen.Coach(username)
+                        "CLIENTE" -> Screen.Client(username)
+                        else -> Screen.Client(username)
+                    }
                 }
-            })
+            )
             is Screen.Admin -> AdminScreen(screen.username) { currentScreen = Screen.Login }
             is Screen.Coach -> CoachScreen(screen.username) { currentScreen = Screen.Login }
             is Screen.Client -> ClientScreen(screen.username) { currentScreen = Screen.Login }
@@ -38,7 +48,10 @@ fun App() {
 }
 
 @Composable
-fun LoginView(onLoginSuccess: (String, String?) -> Unit) {
+fun LoginView(
+    onBiometricClick: () -> Unit,
+    onLoginSuccess: (String, String?) -> Unit
+) {
     val api = remember { AuthApi() }
     val scope = rememberCoroutineScope()
 
@@ -98,6 +111,15 @@ fun LoginView(onLoginSuccess: (String, String?) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (isLoading) "Verificando..." else "Iniciar Sesión")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = { onBiometricClick() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Entrar con Huella Digital")
         }
     }
 }

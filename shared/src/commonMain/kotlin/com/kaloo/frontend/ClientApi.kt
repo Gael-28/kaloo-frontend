@@ -40,7 +40,6 @@ class ClientApi {
                 prettyPrint = true
             })
         }
-        // Configuración de timeouts integrada directamente en el cliente principal
         install(HttpTimeout) {
             requestTimeoutMillis = 60_000
             connectTimeoutMillis = 60_000
@@ -48,7 +47,6 @@ class ClientApi {
         }
     }
 
-    // Reemplaza esta URL con el dominio exacto generado por Railway (sin '/' al final)
     private val baseUrl = "https://kaloo-backend-production.up.railway.app"
 
     suspend fun getNutritionPlan(weight: Float, height: Float): NutritionResponse {
