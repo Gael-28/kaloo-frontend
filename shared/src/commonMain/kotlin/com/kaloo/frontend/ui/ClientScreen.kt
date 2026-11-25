@@ -1,5 +1,6 @@
 package com.kaloo.frontend.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,8 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import com.kaloo.frontend.data.ClientApi
 import com.kaloo.frontend.model.LostAndFoundInfo
 import com.kaloo.frontend.model.UserStreak
@@ -35,12 +39,12 @@ fun ClientScreen(username: String, onLogout: () -> Unit) {
             }
         }
 
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
+        ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 16.dp) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
-                    text = { Text(title) }
+                    text = { Text(title, maxLines = 1) }
                 )
             }
         }
@@ -290,11 +294,60 @@ fun LostItemsTab(api: ClientApi) {
                 ) {
                     Text("Llamar al gerente")
                 }
+
+                if (info!!.items.isNotEmpty()) {
+                    Text("Equipo encontrado", style = MaterialTheme.typography.titleSmall)
+                    info!!.items.forEach { item ->
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                PixelEquipmentImage(item.name, modifier = Modifier.size(72.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(item.name, style = MaterialTheme.typography.titleSmall)
+                                    if (item.description.isNotBlank()) {
+                                        Text(item.description, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    item.dateFound?.let { Text("Encontrado: $it", style = MaterialTheme.typography.bodySmall) }
+                                    Text(item.status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+@Composable
+private fun PixelEquipmentImage(name: String, modifier: Modifier = Modifier) {
+    val seed = name.sumOf { it.code }
+    Canvas(modifier = modifier) {
+        val cols = 8
+        val rows = 8
+        val cellW = size.width / cols
+        val cellH = size.height / rows
+        for (y in 0 until rows) {
+            for (x in 0 until cols) {
+                val v = ((x * 31 + y * 17 + seed) % 4)
+                val gray = when (v) {
+                    0 -> 0xFF222222
+                    1 -> 0xFF777777
+                    2 -> 0xFFBBBBBB
+                    else -> 0xFFE6E6E6
+                }.toInt()
+                drawRect(
+                    color = Color(gray),
+                    topLeft = Offset(x * cellW, y * cellH),
+                    size = Size(cellW + 0.5f, cellH + 0.5f)
+                )
+            }
+        }
+    }
+}
 @Composable
 fun StreakTab(api: ClientApi, username: String) {
     val scope = rememberCoroutineScope()

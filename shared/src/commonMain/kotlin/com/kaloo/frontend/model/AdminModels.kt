@@ -23,10 +23,21 @@ data class AdminPanelResponse(
 )
 
 @Serializable
+data class LostItem(
+    val id: Int,
+    val name: String,
+    val description: String = "",
+    val imageBase64: String? = null,
+    val dateFound: String? = null,
+    val status: String = "ENCONTRADO"
+)
+
+@Serializable
 data class LostAndFoundInfo(
     val establishmentName: String,
     val managerName: String,
     val managerPhone: String,
     val note: String? = null,
-    val message: String = "Llama al gerente para checar objetos perdidos."
+    val message: String = "Llama al gerente para checar objetos perdidos.",
+    val items: List<LostItem> = emptyList()
 )

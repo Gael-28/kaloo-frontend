@@ -1,13 +1,14 @@
 package com.kaloo.frontend.config
 
+import com.kaloo.frontend.platformApiBaseUrl
+
 /**
- * Configuración central de red (antes duplicada en AuthApi y ClientApi).
- * Cambia aquí la URL según dónde pruebes:
- *  - Emulador Android                     → http://10.0.2.2:8080
- *  - Celular físico (misma Wi-Fi que PC) → http://192.168.x.x:8080  (IP local de tu PC)
- *  - Desktop / iOS en la misma PC        → http://localhost:8080
- *  - Producción                           → https://tu-dominio/api
+ * Configuración central de red.
+ * La URL base se resuelve por plataforma/dispositivo en Platform.*.kt:
+ *  - Android emulador                → http://10.0.2.2:8080
+ *  - Android físico (misma Wi-Fi PC) → http://192.168.1.122:8080
+ *  - Desktop / iOS en la misma PC    → http://localhost:8080
  */
 object ApiConfig {
-    const val BASE_URL = "http://10.0.2.2:8080"
+    val BASE_URL: String = platformApiBaseUrl()
 }
