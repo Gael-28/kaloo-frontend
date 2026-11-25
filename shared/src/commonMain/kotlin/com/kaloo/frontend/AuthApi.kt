@@ -1,5 +1,6 @@
 package com.kaloo.frontend
 
+import com.kaloo.frontend.config.BuildKonfig
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -30,8 +31,7 @@ class AuthApi {
         }
     }
 
-    // Cambiar la IP local por tu URL en Railway
-    private val baseUrl = "https://kaloo-backend-production.up.railway.app"
+    private val baseUrl = BuildKonfig.API_BASE_URL
 
     suspend fun login(request: LoginRequest): AuthResponse {
         return try {
