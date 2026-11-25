@@ -1,6 +1,7 @@
 package com.kaloo.frontend
 
 import io.ktor.client.*
+import com.kaloo.frontend.config.BuildKonfig
 import io.ktor.client.call.*
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -10,7 +11,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-// --- Modelos de datos compartidos ---
 
 @Serializable
 data class NutritionRequest(val weight: Float, val height: Float)
@@ -30,7 +30,6 @@ data class CoachMessageRequest(val username: String, val coachName: String, val 
 @Serializable
 data class ApiResponse(val success: Boolean, val message: String)
 
-// --- Cliente de API ---
 
 class ClientApi {
     private val client = HttpClient {
@@ -47,7 +46,7 @@ class ClientApi {
         }
     }
 
-    private val baseUrl = "https://kaloo-backend-production.up.railway.app"
+    private val baseUrl = BuildKonfig.API_BASE_URL
 
     suspend fun getNutritionPlan(weight: Float, height: Float): NutritionResponse {
         return client.post("$baseUrl/api/nutrition") {
