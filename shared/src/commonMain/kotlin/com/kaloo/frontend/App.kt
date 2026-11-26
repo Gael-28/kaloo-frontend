@@ -68,6 +68,9 @@ fun LoginView(
         Text("ProyectoGym - Kaloo", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
 
+        Text("Prueba kmp(multi-plataforma)", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
