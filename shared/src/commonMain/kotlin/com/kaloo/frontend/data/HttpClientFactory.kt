@@ -5,7 +5,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
-/** Fábrica única de HttpClient (antes se creaba en cada Api). */
+/** FAbrica Unica de HttpClient (antes se creaba en cada Api). */
 object HttpClientFactory {
 
     fun create(): HttpClient = HttpClient {

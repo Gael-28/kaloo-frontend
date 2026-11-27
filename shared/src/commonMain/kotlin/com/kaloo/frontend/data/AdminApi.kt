@@ -4,6 +4,8 @@ import com.kaloo.frontend.config.ApiConfig
 import com.kaloo.frontend.model.AdminPanelResponse
 import com.kaloo.frontend.model.Establishment
 import com.kaloo.frontend.model.LostAndFoundInfo
+import com.kaloo.frontend.model.UserStreak
+import com.kaloo.frontend.model.UserSummary
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -24,6 +26,12 @@ class AdminApi {
 
     suspend fun getLostAndFound(): LostAndFoundInfo =
         client.get("$baseUrl/api/admin/lost-and-found").body()
+
+    suspend fun getStreaks(): List<UserStreak> =
+        client.get("$baseUrl/api/admin/streaks").body()
+
+    suspend fun getUsers(): List<UserSummary> =
+        client.get("$baseUrl/api/admin/users").body()
 
     suspend fun updateEstablishment(establishment: Establishment): Establishment =
         client.put("$baseUrl/api/admin/establishment") {

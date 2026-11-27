@@ -24,12 +24,21 @@ data class AdminPanelResponse(
 
 @Serializable
 data class LostItem(
-    val id: Int,
+    val id: Int = 0,
     val name: String,
     val description: String = "",
+    val color: String? = null,
     val imageBase64: String? = null,
     val dateFound: String? = null,
     val status: String = "ENCONTRADO"
+)
+
+@Serializable
+data class LostItemRequest(
+    val name: String,
+    val description: String = "",
+    val color: String? = null,
+    val imageBase64: String? = null
 )
 
 @Serializable
@@ -40,4 +49,10 @@ data class LostAndFoundInfo(
     val note: String? = null,
     val message: String = "Llama al gerente para checar objetos perdidos.",
     val items: List<LostItem> = emptyList()
+)
+
+@Serializable
+data class UserSummary(
+    val username: String,
+    val role: String
 )

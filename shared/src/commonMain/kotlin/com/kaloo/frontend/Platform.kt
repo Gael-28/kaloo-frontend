@@ -6,5 +6,5 @@ interface Platform {
 
 expect fun getPlatform(): Platform
 
-/** URL base del backend según plataforma/dispositivo. */
+/** URL base del backend segUn plataforma/dispositivo. */
 expect fun platformApiBaseUrl(): String

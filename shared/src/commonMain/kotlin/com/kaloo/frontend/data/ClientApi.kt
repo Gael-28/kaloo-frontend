@@ -27,6 +27,12 @@ class ClientApi {
     suspend fun getLostAndFound(): LostAndFoundInfo =
         client.get("$baseUrl/api/lost-and-found").body()
 
+    suspend fun reportLostItem(request: LostItemRequest): LostItem =
+        client.post("$baseUrl/api/lost-and-found/items") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
     suspend fun getStreak(username: String): UserStreak =
         client.get("$baseUrl/api/streak/$username").body()
 

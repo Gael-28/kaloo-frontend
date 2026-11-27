@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ClientScreen(username: String, onLogout: () -> Unit) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Nutrición IA", "Ejercicios IA", "Entrenadores", "Objetos perdidos", "Racha")
+    val tabs = listOf("NutriciOn IA", "Ejercicios IA", "Entrenadores", "Objetos perdidos", "Racha")
     val api = remember { ClientApi() }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -105,13 +105,13 @@ fun NutritionTab(api: ClientApi) {
                             bmiResult = "Tu IMC: $roundedBmi"
                             recommendation = res.recommendation
                         } catch (e: Exception) {
-                            recommendation = "Error de conexión: ${e.message}"
+                            recommendation = "Error de conexiOn: ${e.message}"
                         } finally {
                             isLoading = false
                         }
                     }
                 } else {
-                    bmiResult = "Ingresa peso y estatura válidos."
+                    bmiResult = "Ingresa peso y estatura vAlidos."
                 }
             },
             enabled = !isLoading,
@@ -145,7 +145,7 @@ fun ExercisesTab(api: ClientApi) {
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Recomendación de Ejercicios IA", style = MaterialTheme.typography.titleMedium)
+        Text("RecomendaciOn de Ejercicios IA", style = MaterialTheme.typography.titleMedium)
         Text("Escribe tu objetivo (ej. Fuerza, Masa muscular, Perder grasa).")
 
         OutlinedTextField(
@@ -208,7 +208,7 @@ fun CoachesTab(api: ClientApi, username: String) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Entrenador en turno: Entrenador Kaloo", style = MaterialTheme.typography.titleSmall)
-                Text("Estado: En línea", style = MaterialTheme.typography.bodySmall)
+                Text("Estado: En lInea", style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -258,17 +258,28 @@ fun LostItemsTab(api: ClientApi) {
     var info by remember { mutableStateOf<LostAndFoundInfo?>(null) }
     var error by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
+    var isSaving by remember { mutableStateOf(false) }
+    var itemName by remember { mutableStateOf("") }
+    var itemDesc by remember { mutableStateOf("") }
+    var itemColor by remember { mutableStateOf("") }
+    var itemImageBase64 by remember { mutableStateOf<String?>(null) }
+    var formMsg by remember { mutableStateOf("") }
     val uriHandler = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    val pickers = rememberImagePicker { itemImageBase64 = it; formMsg = "Foto seleccionada." }
 
-    LaunchedEffect(Unit) {
+    suspend fun load() {
         try {
             info = api.getLostAndFound()
+            error = ""
         } catch (e: Exception) {
-            error = "Error de conexión: ${e.message}"
+            error = "Error de conexiÃ³n: ${e.message}"
         } finally {
             isLoading = false
         }
     }
+
+    LaunchedEffect(Unit) { load() }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -283,7 +294,7 @@ fun LostItemsTab(api: ClientApi) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(info!!.establishmentName, style = MaterialTheme.typography.titleSmall)
                         Text("Gerente: ${info!!.managerName}", style = MaterialTheme.typography.bodyLarge)
-                        Text("Teléfono: ${info!!.managerPhone}", style = MaterialTheme.typography.bodyLarge)
+                        Text("TelÃ©fono: ${info!!.managerPhone}", style = MaterialTheme.typography.bodyLarge)
                         info!!.note?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                         Text(info!!.message, style = MaterialTheme.typography.bodyMedium)
                     }
@@ -295,6 +306,39 @@ fun LostItemsTab(api: ClientApi) {
                     Text("Llamar al gerente")
                 }
 
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Reportar objeto", style = MaterialTheme.typography.titleSmall)
+                        OutlinedTextField(itemName, { itemName = it }, label = { Text("Nombre del objeto") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        OutlinedTextField(itemDesc, { itemDesc = it }, label = { Text("DescripciÃ³n") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(itemColor, { itemColor = it }, label = { Text("Color (ej. negro, gris, azul)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = pickers.pickGallery) { Text("Galeria") }
+                            OutlinedButton(onClick = pickers.takePhoto) { Text("Camara") }
+                            if (itemImageBase64 != null) Text("Foto lista", color = MaterialTheme.colorScheme.primary)
+                        }
+                        if (formMsg.isNotEmpty()) Text(formMsg, style = MaterialTheme.typography.bodySmall)
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    if (itemName.isBlank()) { formMsg = "Escribe el nombre del objeto."; return@launch }
+                                    isSaving = true; formMsg = ""
+                                    try {
+                                        api.reportLostItem(com.kaloo.frontend.model.LostItemRequest(itemName, itemDesc, itemColor, itemImageBase64))
+                                        itemName = ""; itemDesc = ""; itemColor = ""; itemImageBase64 = null
+                                        formMsg = "Objeto reportado."
+                                        load()
+                                    } catch (e: Exception) {
+                                        formMsg = "Error: ${e.message}"
+                                    } finally { isSaving = false }
+                                }
+                            },
+                            enabled = !isSaving,
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(if (isSaving) "Guardando..." else "Guardar objeto") }
+                    }
+                }
+
                 if (info!!.items.isNotEmpty()) {
                     Text("Equipo encontrado", style = MaterialTheme.typography.titleSmall)
                     info!!.items.forEach { item ->
@@ -304,12 +348,11 @@ fun LostItemsTab(api: ClientApi) {
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                PixelEquipmentImage(item.name, modifier = Modifier.size(72.dp))
+                                PixelEquipmentImage(item.name, item.color, modifier = Modifier.size(72.dp))
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(item.name, style = MaterialTheme.typography.titleSmall)
-                                    if (item.description.isNotBlank()) {
-                                        Text(item.description, style = MaterialTheme.typography.bodySmall)
-                                    }
+                                    if (item.description.isNotBlank()) Text(item.description, style = MaterialTheme.typography.bodySmall)
+                                    item.color?.takeIf { it.isNotBlank() }?.let { Text("Color: $it", style = MaterialTheme.typography.bodySmall) }
                                     item.dateFound?.let { Text("Encontrado: $it", style = MaterialTheme.typography.bodySmall) }
                                     Text(item.status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
                                 }
@@ -321,10 +364,23 @@ fun LostItemsTab(api: ClientApi) {
         }
     }
 }
-
 @Composable
-private fun PixelEquipmentImage(name: String, modifier: Modifier = Modifier) {
+private fun PixelEquipmentImage(name: String, itemColor: String?, modifier: Modifier = Modifier) {
     val seed = name.sumOf { it.code }
+    val base = when (itemColor?.trim()?.lowercase()) {
+        "negro" -> Color(0xFF222222)
+        "blanco" -> Color(0xFFD9D9D9)
+        "gris" -> Color(0xFF888888)
+        "rojo" -> Color(0xFFC62828)
+        "azul" -> Color(0xFF1565C0)
+        "verde" -> Color(0xFF2E7D32)
+        "amarillo" -> Color(0xFFF9A825)
+        "naranja" -> Color(0xFFEF6C00)
+        "morado", "violeta" -> Color(0xFF6A1B9A)
+        "rosa" -> Color(0xFFAD1457)
+        "cafe", "marron" -> Color(0xFF6D4C41)
+        else -> Color(0xFF888888)
+    }
     Canvas(modifier = modifier) {
         val cols = 8
         val rows = 8
@@ -333,14 +389,14 @@ private fun PixelEquipmentImage(name: String, modifier: Modifier = Modifier) {
         for (y in 0 until rows) {
             for (x in 0 until cols) {
                 val v = ((x * 31 + y * 17 + seed) % 4)
-                val gray = when (v) {
-                    0 -> 0xFF222222
-                    1 -> 0xFF777777
-                    2 -> 0xFFBBBBBB
-                    else -> 0xFFE6E6E6
-                }.toInt()
+                val factor = when (v) { 0 -> 0.35f; 1 -> 0.65f; 2 -> 0.85f; else -> 1.0f }
                 drawRect(
-                    color = Color(gray),
+                    color = Color(
+                        red = (base.red * factor).coerceIn(0f, 1f),
+                        green = (base.green * factor).coerceIn(0f, 1f),
+                        blue = (base.blue * factor).coerceIn(0f, 1f),
+                        alpha = 1f
+                    ),
                     topLeft = Offset(x * cellW, y * cellH),
                     size = Size(cellW + 0.5f, cellH + 0.5f)
                 )
@@ -361,7 +417,7 @@ fun StreakTab(api: ClientApi, username: String) {
             streak = api.getStreak(username)
             error = ""
         } catch (e: Exception) {
-            error = "Error de conexión: ${e.message}"
+            error = "Error de conexiOn: ${e.message}"
         } finally {
             isLoading = false
         }
@@ -374,15 +430,15 @@ fun StreakTab(api: ClientApi, username: String) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Racha 🔥", style = MaterialTheme.typography.titleMedium)
-        Text("Registra tu asistencia cada día para mantener tu racha.")
+        Text("Registra tu asistencia cada dIa para mantener tu racha.")
         when {
             isLoading -> Text("Cargando...")
             error.isNotEmpty() -> Text(error, color = MaterialTheme.colorScheme.error)
             streak != null -> {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Racha actual: ${streak!!.currentStreak} días 🔥", style = MaterialTheme.typography.titleLarge)
-                        Text("Racha más larga: ${streak!!.longestStreak} días")
+                        Text("Racha actual: ${streak!!.currentStreak} dIas 🔥", style = MaterialTheme.typography.titleLarge)
+                        Text("Racha mAs larga: ${streak!!.longestStreak} dIas")
                         Text("Asistencias totales: ${streak!!.totalCheckIns}")
                         streak!!.lastCheckIn?.let { Text("Última asistencia: $it") }
                         streak!!.message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }

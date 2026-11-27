@@ -19,17 +19,17 @@ fun CoachScreen(username: String, onLogout: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         Text("Panel de Entrenador", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        Text("¡Bienvenido, $username!", style = MaterialTheme.typography.bodyLarge)
+        Text("Bienvenido, $username!", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            "Módulo de asignación de rutinas y seguimiento de atletas. (Pendiente: conectar al backend)",
+            "MOdulo de asignaciOn de rutinas y seguimiento de atletas. (Pendiente: conectar al backend)",
             style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = onLogout) {
-            Text("Cerrar Sesión")
+            Text("Cerrar SesiOn")
         }
     }
 }

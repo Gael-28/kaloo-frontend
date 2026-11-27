@@ -17,5 +17,5 @@ actual fun platformApiBaseUrl(): String {
         Build.HARDWARE.contains("ranchu", ignoreCase = true) ||
         Build.HARDWARE.contains("goldfish", ignoreCase = true) ||
         Build.PRODUCT.contains("sdk", ignoreCase = true)
-    return if (isEmulator) "http://10.0.2.2:8080" else "http://192.168.1.122:8080"
+    return if (isEmulator) "http://localhost:8080" else "http://192.168.1.122:8080"
 }

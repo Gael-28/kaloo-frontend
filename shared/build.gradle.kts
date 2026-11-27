@@ -86,6 +86,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+            implementation(libs.androidx.activity.compose)
             implementation("io.ktor:ktor-client-okhttp:3.0.3")
         }
         iosMain.dependencies {

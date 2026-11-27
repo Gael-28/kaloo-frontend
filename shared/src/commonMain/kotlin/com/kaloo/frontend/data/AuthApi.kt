@@ -18,7 +18,7 @@ class AuthApi {
                 setBody(request)
             }.body()
         } catch (e: Exception) {
-            AuthResponse(success = false, message = "Error de conexión: ${e.message}")
+            AuthResponse(success = false, message = "Error de conexiOn: ${e.message}")
         }
     }
 }

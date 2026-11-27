@@ -44,7 +44,7 @@ fun LoginScreen(onLoginSuccess: (String, String?) -> Unit) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Contraseña") },
+            label = { Text("ContraseNa") },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
@@ -67,14 +67,14 @@ fun LoginScreen(onLoginSuccess: (String, String?) -> Unit) {
                     if (response.success && response.username != null) {
                         onLoginSuccess(response.username, response.role)
                     } else {
-                        errorMessage = response.message ?: "Credenciales inválidas"
+                        errorMessage = response.message ?: "Credenciales invAlidas"
                     }
                 }
             },
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (isLoading) "Verificando..." else "Iniciar Sesión")
+            Text(if (isLoading) "Verificando..." else "Iniciar SesiOn")
         }
     }
 }
